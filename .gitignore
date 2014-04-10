@@ -1,2 +1,3 @@
 data/corpuses/*
 data/brain.json
+node_modules/*

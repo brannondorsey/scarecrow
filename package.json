@@ -1,0 +1,25 @@
+{
+  "name": "eli_bot",
+  "version": "0.0.1",
+  "description": "A test chatbot made in a few hours",
+  "keywords": [
+    "chatbot",
+    "artificial intelligence",
+    "ai"
+  ],
+  "author": "Brannon Dorsey <brannon@brannondorsey.com> (http://brannondorsey.com)",
+  "directories": {
+    "lib": "src"
+  },
+  "dependencies" : {
+    "pos": "0.1.5",
+    "underscore": "1.6.x"
+  },
+  "engines": {
+    "node": ">=v0.10.0"
+  },
+  "license": {
+    "url": "https://raw.github.com/brannondorsey/exchatter/master/license",
+    "type": "MIT"
+  }
+}

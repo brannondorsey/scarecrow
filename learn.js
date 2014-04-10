@@ -1,33 +1,37 @@
 var pos = require('pos');
 var fs = require('fs');
-var readline = require('readline');
 var _ = require('underscore');
-var data = {};
-var conversation = [];
 
-var rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+var brain;
+var corpus;
 
-fs.readFile( __dirname + '/data/brain.json', 'utf-8', function(err, d){
+fs.readFile( __dirname + '/data/corpuses/brannon_dorsey/corpus.json', 'utf-8', function(err, data){
+	
 	if (err) throw err;
-	data = JSON.parse(d);
-	respond('hi!\n');
-	// all of the things happen up there^
+	corpus = JSON.parse(data);
+
+	fs.readFile( __dirname + '/data/brain_template.json', 'utf-8', function(err, data){
+
+		if (err) throw err;
+		brain = JSON.parse(data);
+
+		var messageCounter = 0;
+		_.each(corpus, function(conversation){
+			_.each(conversation.messages, function(message){
+				updateData(message.normalized.text);
+				messageCounter++;
+				console.log(messageCounter);
+			});
+		});
+
+		fs.writeFile( __dirname	+ '/data/brain.json', JSON.stringify(brain), function(err){
+			if (err) throw err;
+			console.log('Learned ' + _.size(brain.posPatterns) + ' patterns from ' + messageCounter + ' messages!');
+		});
+	});
 });
 
-function respond(response) {
-	rl.question(response, function(input){
-
-		// process and respond...
-		updateConversation(input);
-		var output = generateMessage();
-		respond(output + '\n');
-	});
-}
-
-function updateConversation(input){
+function updateData(input){
 
 	var words = new pos.Lexer().lex(input);
 	var taggedWords = new pos.Tagger().tag(words);
@@ -37,36 +41,28 @@ function updateConversation(input){
 	    var taggedWord = taggedWords[i];
 	    var word = taggedWord[0];
 	    var tag = taggedWord[1];
+	    // add word to brain.taggedWords
+	    if (_.has(brain.taggedWords, tag)){
+	    	brain.taggedWords[tag].push(word);
+	    }
+
 	    pattern.push(tag);
 	}
 
 	pattern = pattern.join('|');
+
+	// add new pattern to last message's pattern array
+    if (brain.messages.length > 0) {
+	    var lastMessage = brain.messages[brain.messages.length - 1];
+		if (!_.has(brain.posPatterns, lastMessage.pattern)) {
+			brain.posPatterns[lastMessage.pattern] = [];
+		}
+		brain.posPatterns[lastMessage.pattern].push(pattern);
+	}
 	
-	// add message to conversation
-    conversation.push({
+	// add message to brain.messages
+    brain.messages.push({
     	"text": input,
     	"pattern": pattern
     });
-}
-
-function generateMessage() {
-
-	var output = [];
-	var message = conversation[conversation.length - 1];
-
-	// make the return the *most likely* pattern
-	if (_.size(data.posPatterns) > 0 &&
-		!_.isUndefined(data.posPatterns[message.pattern])) {
-		var targetPattern = _.sample(data.posPatterns[message.pattern]);
-		targetPattern = targetPattern.split('|');
-		
-		for (var i = 0; i < targetPattern.length; i++) {
-			var wordPos = targetPattern[i];
-			if (!_.isEmpty(data.taggedWords[wordPos])) {
-				output.push(_.sample(data.taggedWords[wordPos]));
-			}
-		}
-	}
-
-	return output.join(' ');
 }
